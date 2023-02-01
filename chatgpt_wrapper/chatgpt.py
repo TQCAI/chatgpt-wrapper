@@ -37,7 +37,7 @@ class ChatGPT:
     eof_div_id = "chatgpt-wrapper-conversation-stream-data-eof"
     session_div_id = "chatgpt-wrapper-session-data"
 
-    def __init__(self, headless: bool = True, browser="firefox", timeout=60):
+    def __init__(self, headless: bool = True, browser="firefox", timeout=60, conversation_id=None, parent_message_id=None):
         self.play = sync_playwright().start()
 
         try:
@@ -55,8 +55,11 @@ class ChatGPT:
         else:
             self.page = self.browser.new_page()
         self._start_browser()
-        self.parent_message_id = str(uuid.uuid4())
-        self.conversation_id = None
+        if parent_message_id is None:
+            self.parent_message_id = str(uuid.uuid4())
+        else:
+            self.parent_message_id = parent_message_id
+        self.conversation_id = conversation_id
         self.session = None
         self.timeout = timeout
         atexit.register(self._cleanup)
@@ -230,7 +233,7 @@ class ChatGPT:
 
         self._cleanup_divs()
 
-    def ask(self, message: str) -> str:
+    def ask(self, message: str, conversation_id=None, parent_message_id=None) -> str:
         """
         Send a message to chatGPT and return the response.
 
@@ -240,6 +243,13 @@ class ChatGPT:
         Returns:
             str: The response received from OpenAI.
         """
+        # if conversation_id:
+        # if parent_message_id:
+        self.conversation_id = conversation_id
+        if parent_message_id is None:
+            self.parent_message_id = str(uuid.uuid4())
+        else:
+            self.parent_message_id = parent_message_id
         response = list(self.ask_stream(message))
         return (
             reduce(operator.add, response)
